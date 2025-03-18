@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const authMiddleware = require("./middlewares/authMiddleware");
 
 const app = express();
 app.use(express.json());
@@ -97,12 +98,9 @@ app.get("/wickets", async (req, res) => {
 });
 
 // ✅ **Add a new run**
-app.post("/runs", async (req, res) => {
+app.post("/runs", authMiddleware, async (req, res) => {
     try {
-        console.log("📌 Incoming Request Body:", req.body); // ✅ Debugging log
-
         const { name, venue, runs, innings, outs, date } = req.body;
-
         if (!name || !venue || runs == null || innings == null || outs == null || !date) {
             return res.status(400).json({ message: "❌ All fields are required" });
         }
@@ -112,49 +110,29 @@ app.post("/runs", async (req, res) => {
         
         res.status(201).json({ message: "✅ Run added successfully", newRun });
     } catch (err) {
-        console.error("❌ Error adding run:", err);
         res.status(500).json({ message: "❌ Server error", error: err.message });
     }
 });
 
 
-// ✅ **Add a new wicket**
-app.post("/wickets", async (req, res) => {
-    console.log("📌 Incoming Wicket Data:", req.body); // ✅ Debugging log
-
+app.post("/wickets", authMiddleware, async (req, res) => {
     try {
         const { bowler_name, venue, wickets, innings, date } = req.body;
-
-        // Convert values to numbers
-        const wicketsInt = parseInt(wickets, 10);
-        const inningsInt = parseInt(innings, 10);
-
-        if (!bowler_name || !venue || isNaN(wicketsInt) || isNaN(inningsInt) || !date) {
-            console.log("❌ Invalid Input Received:", req.body);
-            return res.status(400).json({ message: "❌ All fields are required and must be valid numbers" });
+        if (!bowler_name || !venue || wickets == null || innings == null || !date) {
+            return res.status(400).json({ message: "❌ All fields are required" });
         }
 
-        const newWicket = new Wicket({
-            bowler_name,
-            venue,
-            wickets: wicketsInt,
-            innings: inningsInt,
-            date,
-        });
-
+        const newWicket = new Wicket({ bowler_name, venue, wickets, innings, date });
         await newWicket.save();
-        console.log("✅ Wicket successfully added:", newWicket);
-        res.status(201).json({ message: "✅ Wicket added successfully", newWicket });
 
+        res.status(201).json({ message: "✅ Wicket added successfully", newWicket });
     } catch (err) {
-        console.error("❌ Error adding wicket:", err);
         res.status(500).json({ message: "❌ Server error", error: err.message });
     }
 });
 
 
-// ✅ **Delete a run**
-app.delete("/runs/:id", async (req, res) => {
+app.delete("/runs/:id", authMiddleware, async (req, res) => {
     try {
         const deletedRun = await Run.findByIdAndDelete(req.params.id);
         if (!deletedRun) {
@@ -166,8 +144,7 @@ app.delete("/runs/:id", async (req, res) => {
     }
 });
 
-// ✅ **Delete a wicket**
-app.delete("/wickets/:id", async (req, res) => {
+app.delete("/wickets/:id", authMiddleware, async (req, res) => {
     try {
         const deletedWicket = await Wicket.findByIdAndDelete(req.params.id);
         if (!deletedWicket) {
@@ -179,8 +156,7 @@ app.delete("/wickets/:id", async (req, res) => {
     }
 });
 
-// ✅ **Update a run**
-app.put("/runs/:id", async (req, res) => {
+app.put("/runs/:id", authMiddleware, async (req, res) => {
     try {
         const updatedRun = await Run.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
@@ -194,8 +170,7 @@ app.put("/runs/:id", async (req, res) => {
     }
 });
 
-// ✅ **Update a wicket**
-app.put("/wickets/:id", async (req, res) => {
+app.put("/wickets/:id", authMiddleware, async (req, res) => {
     try {
         const updatedWicket = await Wicket.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
