@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 const authMiddleware = require("./middlewares/authMiddleware");
 
 const app = express();
@@ -17,7 +18,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // ✅ **Define Mongoose Schemas**
 const RunSchema = new mongoose.Schema({
-    name: { type: String, required: true },  // ✅ Ensure "name" field consistency
+    name: { type: String, required: true },
     venue: { type: String, required: true },
     runs: { type: Number, required: true },
     innings: { type: Number, required: true },
@@ -43,7 +44,7 @@ app.get("/players/stats", async (req, res) => {
         const stats = await Run.aggregate([
             {
                 $group: {
-                    _id: "$name",  // ✅ Group by correct player name field
+                    _id: "$name",
                     totalRuns: { $sum: "$runs" },
                     totalInnings: { $sum: "$innings" },
                     totalOuts: { $sum: "$outs" }
@@ -51,7 +52,7 @@ app.get("/players/stats", async (req, res) => {
             },
             {
                 $project: {
-                    _id: 0,  // ✅ Remove MongoDB ObjectID from output
+                    _id: 0,
                     name: "$_id",
                     totalRuns: 1,
                     totalInnings: 1,
@@ -59,16 +60,16 @@ app.get("/players/stats", async (req, res) => {
                     average: {
                         $cond: {
                             if: { $gt: ["$totalOuts", 0] },
-                            then: { $divide: ["$totalRuns", "$totalOuts"] }, // ✅ Fix calculation
+                            then: { $divide: ["$totalRuns", "$totalOuts"] },
                             else: "N/A"
                         }
                     }
                 }
             },
-            { $sort: { totalRuns: -1 } } // ✅ Sort players by total runs
+            { $sort: { totalRuns: -1 } }
         ]);
 
-        console.log("📌 Player Stats (Backend):", stats); // ✅ Debugging log
+        console.log("📌 Player Stats (Backend):", stats);
         res.json(stats);
     } catch (error) {
         console.error("❌ Error fetching player stats:", error);
@@ -80,7 +81,6 @@ app.get("/players/stats", async (req, res) => {
 app.get("/runs", async (req, res) => {
     try {
         const runs = await Run.find().select("name venue runs innings outs date");
-        console.log("📌 Fetched Runs from DB:", runs);
         res.json(runs);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -114,7 +114,7 @@ app.post("/runs", authMiddleware, async (req, res) => {
     }
 });
 
-
+// ✅ **Add a new wicket**
 app.post("/wickets", authMiddleware, async (req, res) => {
     try {
         const { bowler_name, venue, wickets, innings, date } = req.body;
@@ -131,7 +131,7 @@ app.post("/wickets", authMiddleware, async (req, res) => {
     }
 });
 
-
+// ✅ **Delete a run**
 app.delete("/runs/:id", authMiddleware, async (req, res) => {
     try {
         const deletedRun = await Run.findByIdAndDelete(req.params.id);
@@ -144,6 +144,7 @@ app.delete("/runs/:id", authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ **Delete a wicket**
 app.delete("/wickets/:id", authMiddleware, async (req, res) => {
     try {
         const deletedWicket = await Wicket.findByIdAndDelete(req.params.id);
@@ -156,6 +157,7 @@ app.delete("/wickets/:id", authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ **Update a run**
 app.put("/runs/:id", authMiddleware, async (req, res) => {
     try {
         const updatedRun = await Run.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -170,6 +172,7 @@ app.put("/runs/:id", authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ **Update a wicket**
 app.put("/wickets/:id", authMiddleware, async (req, res) => {
     try {
         const updatedWicket = await Wicket.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -182,6 +185,12 @@ app.put("/wickets/:id", authMiddleware, async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// ✅ **Serve Frontend for React Routes**
+app.use(express.static(path.join(__dirname, "frontend/build")));
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "frontend/build", "index.html"));
 });
 
 // ✅ **Start the server**
