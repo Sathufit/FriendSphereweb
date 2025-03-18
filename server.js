@@ -99,22 +99,21 @@ app.get("/wickets", async (req, res) => {
 // ✅ **Add a new run**
 app.post("/runs", async (req, res) => {
     try {
-        const { name, venue, runs, innings, outs, date } = req.body;
+        const { name, venue, runs, innings, outs, date } = req.body; // ✅ Fixed "name" field
 
         if (!name || !venue || runs == null || innings == null || outs == null || !date) {
             return res.status(400).json({ message: "❌ All fields are required" });
         }
 
-        const newRun = new Run({ name, venue, runs: Number(runs), innings: Number(innings), outs: Number(outs), date });
-
+        const newRun = new Run({ name, venue, runs, innings, outs, date });
         await newRun.save();
-
+        
         res.status(201).json({ message: "✅ Run added successfully", newRun });
     } catch (err) {
+        console.error("❌ Error adding run:", err);
         res.status(500).json({ message: "❌ Server error", error: err.message });
     }
 });
-
 
 // ✅ **Add a new wicket**
 app.post("/wickets", async (req, res) => {
