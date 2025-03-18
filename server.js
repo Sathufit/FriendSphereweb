@@ -7,7 +7,15 @@ const authMiddleware = require("./middlewares/authMiddleware");
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+const corsOptions = {
+    origin: ["https://frontendcrickweb.onrender.com", "http://localhost:3000"], // ✅ Allow your frontend domains
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
+
 
 // ✅ **Connect to MongoDB Atlas**
 mongoose.connect(process.env.MONGO_URI, {
