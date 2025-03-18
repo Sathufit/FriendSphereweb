@@ -3,13 +3,14 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+const authRoutes = require("./routes/auth");
 
-// ✅ Import Routes
-const authRoutes = require("./routes/auth"); // ✅ Authentication routes for admin
+
 const authMiddleware = require("./middlewares/authMiddleware");
 
 const app = express();
 app.use(express.json());
+app.use("/admin", authRoutes); // ✅ Fix for admin login issue
 
 // ✅ CORS Configuration
 const corsOptions = {
@@ -27,8 +28,6 @@ mongoose.connect(process.env.MONGO_URI, {
 }).then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// ✅ **Register Authentication Routes**
-app.use("/admin", authRoutes); // ✅ Fix for admin login issue
 
 // ✅ **Define Mongoose Schemas**
 const RunSchema = new mongoose.Schema({
@@ -185,11 +184,14 @@ app.put("/wickets/:id", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ **Serve Frontend for React Routes**
-app.use(express.static(path.join(__dirname, "frontend/build")));
+
+const frontendPath = path.join(__dirname, "../frontend/build");
+app.use(express.static(frontendPath));
+
 app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "frontend/build", "index.html"));
+    res.sendFile(path.join(frontendPath, "index.html"));
 });
+
 
 // ✅ **Start the server**
 const PORT = process.env.PORT || 5001;
