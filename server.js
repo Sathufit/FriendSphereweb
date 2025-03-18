@@ -4,9 +4,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 
-// ✅ Import Routes
-const authRoutes = require("./routes/auth");
-const authMiddleware = require("./middlewares/authMiddleware");
 
 const app = express();
 app.use(express.json());
@@ -20,28 +17,12 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// ✅ **Ensure CORS Headers Are Always Set**
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "https://frontendcrickweb.onrender.com");
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-    if (req.method === "OPTIONS") {
-        return res.status(200).end();
-    }
-    next();
-});
-
-
 // ✅ **Connect to MongoDB Atlas**
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }).then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
-
-// ✅ **Register Authentication Routes**
-app.use("/admin", authRoutes);
 
 // ✅ **Define Mongoose Schemas**
 const RunSchema = new mongoose.Schema({
@@ -120,7 +101,7 @@ app.get("/wickets", async (req, res) => {
     }
 });
 
-app.post("/runs", authMiddleware, async (req, res) => {
+app.post("/runs", async (req, res) => {
     try {
         const { name, venue, runs, innings, outs, date } = req.body;
         if (!name || !venue || runs == null || innings == null || outs == null || !date) {
@@ -135,7 +116,7 @@ app.post("/runs", authMiddleware, async (req, res) => {
     }
 });
 
-app.post("/wickets", authMiddleware, async (req, res) => {
+app.post("/wickets", async (req, res) => {
     try {
         const { bowler_name, venue, wickets, innings, date } = req.body;
         if (!bowler_name || !venue || wickets == null || innings == null || !date) {
@@ -150,7 +131,7 @@ app.post("/wickets", authMiddleware, async (req, res) => {
     }
 });
 
-app.delete("/runs/:id", authMiddleware, async (req, res) => {
+app.delete("/runs/:id", async (req, res) => {
     try {
         const deletedRun = await Run.findByIdAndDelete(req.params.id);
         if (!deletedRun) {
@@ -162,7 +143,7 @@ app.delete("/runs/:id", authMiddleware, async (req, res) => {
     }
 });
 
-app.delete("/wickets/:id", authMiddleware, async (req, res) => {
+app.delete("/wickets/:id", async (req, res) => {
     try {
         const deletedWicket = await Wicket.findByIdAndDelete(req.params.id);
         if (!deletedWicket) {
@@ -174,7 +155,7 @@ app.delete("/wickets/:id", authMiddleware, async (req, res) => {
     }
 });
 
-app.put("/runs/:id", authMiddleware, async (req, res) => {
+app.put("/runs/:id", async (req, res) => {
     try {
         const updatedRun = await Run.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updatedRun) {
@@ -186,7 +167,7 @@ app.put("/runs/:id", authMiddleware, async (req, res) => {
     }
 });
 
-app.put("/wickets/:id", authMiddleware, async (req, res) => {
+app.put("/wickets/:id", async (req, res) => {
     try {
         const updatedWicket = await Wicket.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updatedWicket) {
