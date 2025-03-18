@@ -3,19 +3,22 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+
+// ✅ Import Routes
+const authRoutes = require("./routes/auth"); // ✅ Authentication routes for admin
 const authMiddleware = require("./middlewares/authMiddleware");
 
 const app = express();
 app.use(express.json());
+
+// ✅ CORS Configuration
 const corsOptions = {
-    origin: ["https://frontendcrickweb.onrender.com", "http://localhost:3000"], // ✅ Allow your frontend domains
+    origin: ["https://frontendcrickweb.onrender.com", "http://localhost:3000"], // ✅ Allow frontend domains
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
 };
-
 app.use(cors(corsOptions));
-
 
 // ✅ **Connect to MongoDB Atlas**
 mongoose.connect(process.env.MONGO_URI, {
@@ -23,6 +26,9 @@ mongoose.connect(process.env.MONGO_URI, {
     useUnifiedTopology: true
 }).then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+// ✅ **Register Authentication Routes**
+app.use("/admin", authRoutes); // ✅ Fix for admin login issue
 
 // ✅ **Define Mongoose Schemas**
 const RunSchema = new mongoose.Schema({
@@ -46,7 +52,7 @@ const WicketSchema = new mongoose.Schema({
 const Run = mongoose.model("runs", RunSchema);
 const Wicket = mongoose.model("wickets", WicketSchema);
 
-// ✅ **Get Player Stats**
+// ✅ **API Routes**
 app.get("/players/stats", async (req, res) => {
     try {
         const stats = await Run.aggregate([
@@ -77,15 +83,12 @@ app.get("/players/stats", async (req, res) => {
             { $sort: { totalRuns: -1 } }
         ]);
 
-        console.log("📌 Player Stats (Backend):", stats);
         res.json(stats);
     } catch (error) {
-        console.error("❌ Error fetching player stats:", error);
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
 });
 
-// ✅ **Fetch all runs**
 app.get("/runs", async (req, res) => {
     try {
         const runs = await Run.find().select("name venue runs innings outs date");
@@ -95,7 +98,6 @@ app.get("/runs", async (req, res) => {
     }
 });
 
-// ✅ **Fetch all wickets**
 app.get("/wickets", async (req, res) => {
     try {
         const wickets = await Wicket.find();
@@ -105,7 +107,6 @@ app.get("/wickets", async (req, res) => {
     }
 });
 
-// ✅ **Add a new run**
 app.post("/runs", authMiddleware, async (req, res) => {
     try {
         const { name, venue, runs, innings, outs, date } = req.body;
@@ -115,14 +116,12 @@ app.post("/runs", authMiddleware, async (req, res) => {
 
         const newRun = new Run({ name, venue, runs, innings, outs, date });
         await newRun.save();
-        
         res.status(201).json({ message: "✅ Run added successfully", newRun });
     } catch (err) {
         res.status(500).json({ message: "❌ Server error", error: err.message });
     }
 });
 
-// ✅ **Add a new wicket**
 app.post("/wickets", authMiddleware, async (req, res) => {
     try {
         const { bowler_name, venue, wickets, innings, date } = req.body;
@@ -132,14 +131,12 @@ app.post("/wickets", authMiddleware, async (req, res) => {
 
         const newWicket = new Wicket({ bowler_name, venue, wickets, innings, date });
         await newWicket.save();
-
         res.status(201).json({ message: "✅ Wicket added successfully", newWicket });
     } catch (err) {
         res.status(500).json({ message: "❌ Server error", error: err.message });
     }
 });
 
-// ✅ **Delete a run**
 app.delete("/runs/:id", authMiddleware, async (req, res) => {
     try {
         const deletedRun = await Run.findByIdAndDelete(req.params.id);
@@ -152,7 +149,6 @@ app.delete("/runs/:id", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ **Delete a wicket**
 app.delete("/wickets/:id", authMiddleware, async (req, res) => {
     try {
         const deletedWicket = await Wicket.findByIdAndDelete(req.params.id);
@@ -165,30 +161,24 @@ app.delete("/wickets/:id", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ **Update a run**
 app.put("/runs/:id", authMiddleware, async (req, res) => {
     try {
         const updatedRun = await Run.findByIdAndUpdate(req.params.id, req.body, { new: true });
-
         if (!updatedRun) {
             return res.status(404).json({ message: "❌ Run not found" });
         }
-
         res.json({ message: "✅ Run updated successfully", updatedRun });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// ✅ **Update a wicket**
 app.put("/wickets/:id", authMiddleware, async (req, res) => {
     try {
         const updatedWicket = await Wicket.findByIdAndUpdate(req.params.id, req.body, { new: true });
-
         if (!updatedWicket) {
             return res.status(404).json({ message: "❌ Wicket not found" });
         }
-
         res.json({ message: "✅ Wicket updated successfully", updatedWicket });
     } catch (err) {
         res.status(500).json({ error: err.message });
