@@ -3,44 +3,32 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const Admin = require("./models/Admin");
 
-const updateOrCreateAdmin = async () => {
-  try {
-    // ✅ Connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+const updateAdminPassword = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
 
-    const username = "Yamila"; // Change if needed
-    const plainPassword = "Yamila123"; // Change this to your desired password
+        const username = "Yamila"; 
+        const newPassword = "Yamila123"; // Change to a new password
 
-    // ✅ Hash the password securely
-    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    console.log("🔹 New Hashed Password:", hashedPassword); // Debugging purpose
+        const admin = await Admin.findOne({ username });
+        if (!admin) {
+            console.log("❌ Admin user not found!");
+        } else {
+            admin.password = hashedPassword;
+            await admin.save();
+            console.log("✅ Admin password updated successfully.");
+        }
 
-    // ✅ Find the admin by email or username
-    const existingAdmin = await Admin.findOne({ username });
-
-    if (existingAdmin) {
-      // ✅ Update the password if the admin exists
-      existingAdmin.password = hashedPassword;
-      await existingAdmin.save();
-      console.log("✅ Admin password updated successfully.");
-    } else {
-      // ✅ Create a new admin if none exists
-      const newAdmin = new Admin({ username, password: hashedPassword });
-      await newAdmin.save();
-      console.log("✅ New admin created successfully.");
+        mongoose.connection.close();
+    } catch (error) {
+        console.error("❌ Error updating admin password:", error);
+        mongoose.connection.close();
     }
-
-    // ✅ Close MongoDB connection
-    mongoose.connection.close();
-  } catch (error) {
-    console.error("❌ Error updating/creating admin:", error);
-    mongoose.connection.close();
-  }
 };
 
-// ✅ Run the script
-updateOrCreateAdmin();
+updateAdminPassword();
