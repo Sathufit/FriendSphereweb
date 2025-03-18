@@ -13,7 +13,7 @@ app.use(express.json());
 
 // ✅ CORS Configuration
 const corsOptions = {
-    origin: ["https://frontendcrickweb.onrender.com", "http://localhost:3000"], // ✅ Allow frontend domains
+    origin: ["https://frontendcrickweb.onrender.com", "http://localhost:3000"], 
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
