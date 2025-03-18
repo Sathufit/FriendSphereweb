@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // ✅ **Define Mongoose Schemas**
 const RunSchema = new mongoose.Schema({
-    name: { type: String, required: true }, // ✅ Change batsman_name → name
+    name: { type: String, required: true },  // ✅ Ensure "name" field consistency
     venue: { type: String, required: true },
     runs: { type: Number, required: true },
     innings: { type: Number, required: true },
@@ -36,12 +36,13 @@ const WicketSchema = new mongoose.Schema({
 const Run = mongoose.model("runs", RunSchema);
 const Wicket = mongoose.model("wickets", WicketSchema);
 
+// ✅ **Get Player Stats**
 app.get("/players/stats", async (req, res) => {
     try {
         const stats = await Run.aggregate([
             {
                 $group: {
-                    _id: "$name",  // ✅ Group by the correct player name field
+                    _id: "$name",  // ✅ Group by correct player name field
                     totalRuns: { $sum: "$runs" },
                     totalInnings: { $sum: "$innings" },
                     totalOuts: { $sum: "$outs" }
@@ -57,7 +58,7 @@ app.get("/players/stats", async (req, res) => {
                     average: {
                         $cond: {
                             if: { $gt: ["$totalOuts", 0] },
-                            then: { $divide: ["$totalRuns", "$totalOuts"] }, // ✅ Calculate average properly
+                            then: { $divide: ["$totalRuns", "$totalOuts"] }, // ✅ Fix calculation
                             else: "N/A"
                         }
                     }
@@ -66,7 +67,7 @@ app.get("/players/stats", async (req, res) => {
             { $sort: { totalRuns: -1 } } // ✅ Sort players by total runs
         ]);
 
-        console.log("📌 Player Stats (Backend):", stats); // ✅ Debugging
+        console.log("📌 Player Stats (Backend):", stats); // ✅ Debugging log
         res.json(stats);
     } catch (error) {
         console.error("❌ Error fetching player stats:", error);
@@ -74,11 +75,10 @@ app.get("/players/stats", async (req, res) => {
     }
 });
 
-
-// ✅ Fetch all runs (Fix: Ensure route is correctly defined)
+// ✅ **Fetch all runs**
 app.get("/runs", async (req, res) => {
     try {
-        const runs = await Run.find().select("name venue runs innings outs date"); // ✅ Ensure `name` is selected
+        const runs = await Run.find().select("name venue runs innings outs date");
         console.log("📌 Fetched Runs from DB:", runs);
         res.json(runs);
     } catch (err) {
@@ -96,24 +96,25 @@ app.get("/wickets", async (req, res) => {
     }
 });
 
-
 // ✅ **Add a new run**
 app.post("/runs", async (req, res) => {
     try {
-        const { batsman_name, venue, runs, innings, outs, date } = req.body;
+        const { name, venue, runs, innings, outs, date } = req.body; // ✅ FIXED FIELD
 
-        if (!batsman_name || !venue || !runs || !innings || !outs || !date) {
+        if (!name || !venue || runs == null || innings == null || outs == null || !date) {
             return res.status(400).json({ message: "❌ All fields are required" });
         }
 
-        const newRun = new Run({ batsman_name, venue, runs, innings, outs, date });
+        const newRun = new Run({ name, venue, runs, innings, outs, date });
         await newRun.save();
         
         res.status(201).json({ message: "✅ Run added successfully", newRun });
     } catch (err) {
-        res.status(500).json({ message: "❌ Error adding run", error: err.message });
+        console.error("❌ Error adding run:", err);
+        res.status(500).json({ message: "❌ Server error", error: err.message });
     }
 });
+
 
 // ✅ **Add a new wicket**
 app.post("/wickets", async (req, res) => {
@@ -134,6 +135,19 @@ app.post("/wickets", async (req, res) => {
 });
 
 // ✅ **Delete a run**
+app.delete("/runs/:id", async (req, res) => {
+    try {
+        const deletedRun = await Run.findByIdAndDelete(req.params.id);
+        if (!deletedRun) {
+            return res.status(404).json({ message: "❌ Run not found" });
+        }
+        res.json({ message: "✅ Run deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ✅ **Delete a wicket**
 app.delete("/wickets/:id", async (req, res) => {
     try {
         const deletedWicket = await Wicket.findByIdAndDelete(req.params.id);
@@ -141,21 +155,6 @@ app.delete("/wickets/:id", async (req, res) => {
             return res.status(404).json({ message: "❌ Wicket not found" });
         }
         res.json({ message: "✅ Wicket deleted successfully" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ✅ **Delete a wicket**
-app.put("/wickets/:id", async (req, res) => {
-    try {
-        const updatedWicket = await Wicket.findByIdAndUpdate(req.params.id, req.body, { new: true });
-
-        if (!updatedWicket) {
-            return res.status(404).json({ message: "❌ Wicket not found" });
-        }
-
-        res.json({ message: "✅ Wicket updated successfully", updatedWicket });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
