@@ -101,8 +101,14 @@ app.post("/runs", async (req, res) => {
     try {
         const { name, venue, runs, innings, outs, date } = req.body; // ✅ FIXED FIELD
 
+        // ✅ Check if all fields are present
         if (!name || !venue || runs == null || innings == null || outs == null || !date) {
             return res.status(400).json({ message: "❌ All fields are required" });
+        }
+
+        // ✅ Ensure numbers are valid (No negative values)
+        if (runs < 0 || innings < 0 || outs < 0) {
+            return res.status(400).json({ message: "❌ Invalid values. Runs, innings, and outs cannot be negative." });
         }
 
         const newRun = new Run({ name, venue, runs, innings, outs, date });
