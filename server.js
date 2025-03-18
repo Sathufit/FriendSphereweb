@@ -120,21 +120,38 @@ app.post("/runs", async (req, res) => {
 
 // ✅ **Add a new wicket**
 app.post("/wickets", async (req, res) => {
+    console.log("📌 Incoming Wicket Data:", req.body); // ✅ Debugging log
+
     try {
         const { bowler_name, venue, wickets, innings, date } = req.body;
 
-        if (!bowler_name || !venue || !wickets || !innings || !date) {
-            return res.status(400).json({ message: "❌ All fields are required" });
+        // Convert values to numbers
+        const wicketsInt = parseInt(wickets, 10);
+        const inningsInt = parseInt(innings, 10);
+
+        if (!bowler_name || !venue || isNaN(wicketsInt) || isNaN(inningsInt) || !date) {
+            console.log("❌ Invalid Input Received:", req.body);
+            return res.status(400).json({ message: "❌ All fields are required and must be valid numbers" });
         }
 
-        const newWicket = new Wicket({ bowler_name, venue, wickets, innings, date });
+        const newWicket = new Wicket({
+            bowler_name,
+            venue,
+            wickets: wicketsInt,
+            innings: inningsInt,
+            date,
+        });
+
         await newWicket.save();
-        
+        console.log("✅ Wicket successfully added:", newWicket);
         res.status(201).json({ message: "✅ Wicket added successfully", newWicket });
+
     } catch (err) {
-        res.status(500).json({ message: "❌ Error adding wicket", error: err.message });
+        console.error("❌ Error adding wicket:", err);
+        res.status(500).json({ message: "❌ Server error", error: err.message });
     }
 });
+
 
 // ✅ **Delete a run**
 app.delete("/runs/:id", async (req, res) => {
