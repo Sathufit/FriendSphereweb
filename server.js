@@ -3,23 +3,35 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+
+// ✅ Import Routes
 const authRoutes = require("./routes/auth");
-
-
 const authMiddleware = require("./middlewares/authMiddleware");
 
 const app = express();
 app.use(express.json());
-app.use("/admin", authRoutes); // ✅ Fix for admin login issue
 
-// ✅ CORS Configuration
+// ✅ **Fix CORS Configuration**
 const corsOptions = {
-    origin: ["https://frontendcrickweb.onrender.com", "http://localhost:3000"], 
+    origin: ["https://frontendcrickweb.onrender.com", "http://localhost:3000"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
 };
 app.use(cors(corsOptions));
+
+// ✅ **Ensure CORS Headers Are Always Set**
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "https://frontendcrickweb.onrender.com");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+    next();
+});
+
 
 // ✅ **Connect to MongoDB Atlas**
 mongoose.connect(process.env.MONGO_URI, {
@@ -28,6 +40,8 @@ mongoose.connect(process.env.MONGO_URI, {
 }).then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
+// ✅ **Register Authentication Routes**
+app.use("/admin", authRoutes);
 
 // ✅ **Define Mongoose Schemas**
 const RunSchema = new mongoose.Schema({
@@ -185,13 +199,13 @@ app.put("/wickets/:id", authMiddleware, async (req, res) => {
 });
 
 
+// ✅ **Serve Frontend for React Routes**
 const frontendPath = path.join(__dirname, "../frontend/build");
 app.use(express.static(frontendPath));
 
 app.get("*", (req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
 });
-
 
 // ✅ **Start the server**
 const PORT = process.env.PORT || 5001;
